@@ -431,10 +431,47 @@ function AddEntryView({ activeTripId, onAddEntry, setActiveTab }: { activeTripId
     setImageFile(null);
   }
 
-  function submit() {
-    const fallbackTitle = type === "photo" ? "New photo memory" : type === "quote" ? "New quote" : "New memory";
-    onAddEntry({
-      id: `entry_${Date.now()}`,
+  async function submit() {
+    const fallbackTitle =
+      type === "photo"
+        ? "New photo memory"
+        : type === "quote"
+        ? "New quote"
+        : "New memory";
+
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (userError || !user) {
+      alert("Please sign in first.");
+      return;
+    }
+
+    let imageUrl = "";
+
+    if (imageFile) {
+      const filePath = `${activeTripId}/${user.id}/${Date.now()}-${imageFile.name}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from("scrapbook-images")
+        .upload(filePath, imageFile);
+
+      if (uploadError) {
+        console.error("Image upload error:", uploadError);
+        alert(uploadError.message);
+        return;
+      }
+
+      const { data } = supabase.storage
+        .from("scrapbook-images")
+        .getPublicUrl(filePath);
+
+      imageUrl = data.publicUrl;
+    }
+
+    await onAddEntry({
       tripId: activeTripId,
       type,
       author: "You",
@@ -442,11 +479,9 @@ function AddEntryView({ activeTripId, onAddEntry, setActiveTab }: { activeTripId
       body: body.trim(),
       location: location.trim(),
       mood: mood.trim(),
-      image,
-      reactions: [],
-      comments: [],
-      createdAt: new Date().toISOString(),
+      image: imageUrl,
     });
+
     resetForm();
     setActiveTab("feed");
   }
@@ -777,8 +812,37 @@ export default function TravelScrapbookMVP() {
       );
   }, [entries, activeTrip]);
 
-  function addEntry(entry: any): void {
-    setEntries((current) => [entry, ...current]);
+  async function addEntry(entry: any) {
+    if (!user) {
+      alert("Please sign in first.");
+      return;
+    }
+
+    console.log("Adding entry to Supabase:", entry);
+
+    const { data, error } = await supabase
+      .from("entries")
+      .insert({
+        trip_id: entry.tripId,
+        author_id: user.id,
+        type: entry.type,
+        title: entry.title,
+        body: entry.body,
+        location: entry.location,
+        mood: entry.mood,
+        image_url: entry.image,
+      })
+      .select();
+
+    if (error) {
+      console.error("Supabase insert error:", error);
+      alert(error.message);
+      return;
+    }
+
+    console.log("Inserted entry:", data);
+
+    await loadEntries(entry.tripId);
   }
 
   function addReaction(entryId: string, emoji: string): void {

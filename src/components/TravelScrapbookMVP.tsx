@@ -39,7 +39,9 @@ const tabs = [
   { id: "members", label: "Crew", icon: Users },
 ];
 
-function classNames(...values) {
+function classNames(
+  ...values: Array<string | false | null | undefined>
+): string {
   return values.filter(Boolean).join(" ");
 }
 

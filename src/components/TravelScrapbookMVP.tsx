@@ -71,27 +71,6 @@ function groupByDay(entries: any[]): Record<string, any[]> {
   }, {});
 }
 
-function useLocalStorageState(key: string, fallback: any): [any, (value: any) => void] {
-  const [value, setValue] = useState(() => {
-    try {
-      const saved = localStorage.getItem(key);
-      return saved ? JSON.parse(saved) : fallback;
-    } catch {
-      return fallback;
-    }
-  });
-
-  useEffect(() => {
-    try {
-      localStorage.setItem(key, JSON.stringify(value));
-    } catch {
-      // Ignore storage failures in preview environments.
-    }
-  }, [key, value]);
-
-  return [value, setValue];
-}
-
 function AppHeader({ trips, activeTrip, setActiveTripId, onCreateTrip }: { trips: any[]; activeTrip: any; setActiveTripId: (id: string) => void; onCreateTrip: () => void }) {
   const [open, setOpen] = useState(false);
 
@@ -741,11 +720,51 @@ export default function TravelScrapbookMVP() {
     init();
 }, []);
   
+  // 1. Make sure activeTripId is valid
   useEffect(() => {
-    if (!trips.find((trip) => trip.id === activeTripId) && trips[0]) {
+    if (trips.length === 0) {
+      setActiveTripId("");
+      return;
+    }
+
+    const activeTripStillExists = trips.some((trip) => trip.id === activeTripId);
+
+    if (!activeTripStillExists) {
       setActiveTripId(trips[0].id);
     }
-  }, [trips, activeTripId, setActiveTripId]);
+  }, [trips, activeTripId]);
+
+  // 2. Load entries when active trip changes
+  useEffect(() => {
+    if (!activeTripId) return;
+
+    loadEntries(activeTripId);
+  }, [activeTripId]);
+
+  // 3. Listen for new entries from other browsers
+  useEffect(() => {
+    if (!activeTripId) return;
+
+    const channel = supabase
+      .channel(`entries-${activeTripId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "entries",
+          filter: `trip_id=eq.${activeTripId}`,
+        },
+        () => {
+          loadEntries(activeTripId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeTripId]);
 
   const activeEntries = useMemo(() => {
     if (!activeTrip) return [];
@@ -828,6 +847,36 @@ export default function TravelScrapbookMVP() {
     setActiveTripId(tripId);
     setActiveTab("feed");
     setShowCreateTrip(false);
+  }
+  
+  async function loadEntries(tripId: string) {
+    const { data, error } = await supabase
+      .from("entries")
+      .select("*")
+      .eq("trip_id", tripId)
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    const mappedEntries = (data || []).map((entry) => ({
+      id: entry.id,
+      tripId: entry.trip_id,
+      type: entry.type,
+      author: entry.author_id === user?.id ? "You" : "Member",
+      title: entry.title,
+      body: entry.body || "",
+      location: entry.location || "",
+      image: entry.image_url || "",
+      mood: entry.mood || "",
+      reactions: [],
+      comments: [],
+      createdAt: entry.created_at,
+    }));
+
+    setEntries(mappedEntries);
   }
 
   if (loading) {

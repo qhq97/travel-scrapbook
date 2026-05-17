@@ -45,7 +45,7 @@ function classNames(
   return values.filter(Boolean).join(" ");
 }
 
-function formatDay(dateString) {
+function formatDay(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString(undefined, {
     weekday: "short",
@@ -54,7 +54,7 @@ function formatDay(dateString) {
   });
 }
 
-function formatTime(dateString) {
+function formatTime(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleTimeString(undefined, {
     hour: "numeric",
@@ -62,8 +62,8 @@ function formatTime(dateString) {
   });
 }
 
-function groupByDay(entries) {
-  return entries.reduce((acc, entry) => {
+function groupByDay(entries: any[]): Record<string, any[]> {
+  return entries.reduce((acc: Record<string, any[]>, entry) => {
     const key = formatDay(entry.createdAt);
     if (!acc[key]) acc[key] = [];
     acc[key].push(entry);
@@ -71,7 +71,7 @@ function groupByDay(entries) {
   }, {});
 }
 
-function useLocalStorageState(key, fallback) {
+function useLocalStorageState(key: string, fallback: any): [any, (value: any) => void] {
   const [value, setValue] = useState(() => {
     try {
       const saved = localStorage.getItem(key);
@@ -92,7 +92,7 @@ function useLocalStorageState(key, fallback) {
   return [value, setValue];
 }
 
-function AppHeader({ trips, activeTrip, setActiveTripId, onCreateTrip }) {
+function AppHeader({ trips, activeTrip, setActiveTripId, onCreateTrip }: { trips: any[]; activeTrip: any; setActiveTripId: (id: string) => void; onCreateTrip: () => void }) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -160,7 +160,7 @@ function AppHeader({ trips, activeTrip, setActiveTripId, onCreateTrip }) {
   );
 }
 
-function CoverCard({ trip, entryCount }) {
+function CoverCard({ trip, entryCount }: { trip: any; entryCount: number }) {
   return (
     <div className="px-4 pt-4">
       <div className="relative overflow-hidden rounded-[2rem] bg-slate-900 shadow-xl shadow-slate-300/60">
@@ -183,8 +183,8 @@ function CoverCard({ trip, entryCount }) {
   );
 }
 
-function EntryCard({ entry, onReact, onAddComment }) {
-  const meta = entryTypeMeta[entry.type] || entryTypeMeta.note;
+function EntryCard({ entry, onReact, onAddComment }: { entry: any; onReact: (id: string, emoji: string) => void; onAddComment: (id: string, comment: string) => void }) {
+  const meta = entryTypeMeta[entry.type as keyof typeof entryTypeMeta] || entryTypeMeta.note;
   const TypeIcon = meta.icon;
   const [commentText, setCommentText] = useState("");
   const [showCommentBox, setShowCommentBox] = useState(false);
@@ -246,7 +246,7 @@ function EntryCard({ entry, onReact, onAddComment }) {
 
         {entry.reactions.length ? (
           <div className="mt-3 flex flex-wrap gap-1 text-sm text-slate-600">
-            {entry.reactions.map((reaction, index) => (
+            {entry.reactions.map((reaction: string, index: number) => (
               <span key={`${reaction}-${index}`} className="rounded-full bg-slate-100 px-2 py-1">
                 {reaction}
               </span>
@@ -256,7 +256,7 @@ function EntryCard({ entry, onReact, onAddComment }) {
 
         {entry.comments.length ? (
           <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-            {entry.comments.map((comment, index) => (
+            {entry.comments.map((comment: string, index: number) => (
               <div key={`${comment}-${index}`} className="rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
                 {comment}
               </div>
@@ -294,7 +294,7 @@ function EntryCard({ entry, onReact, onAddComment }) {
   );
 }
 
-function FeedView({ trip, entries, onReact, onAddComment }) {
+function FeedView({ trip, entries, onReact, onAddComment }: { trip: any; entries: any[]; onReact: (id: string, emoji: string) => void; onAddComment: (id: string, comment: string) => void }) {
   const grouped = groupByDay(entries);
 
   return (
@@ -324,7 +324,7 @@ function FeedView({ trip, entries, onReact, onAddComment }) {
   );
 }
 
-function ScrapbookView({ trip, entries }) {
+function ScrapbookView({ trip, entries }: { trip: any; entries: any[] }) {
   return (
     <div className="pb-28">
       <CoverCard trip={trip} entryCount={entries.length} />
@@ -374,7 +374,7 @@ function ScrapbookView({ trip, entries }) {
   );
 }
 
-function MembersView({ trip }) {
+function MembersView({ trip }: { trip: any }) {
   const [copied, setCopied] = useState(false);
 
   async function copyInvite() {
@@ -433,7 +433,7 @@ function MembersView({ trip }) {
   );
 }
 
-function AddEntryView({ activeTripId, onAddEntry, setActiveTab }) {
+function AddEntryView({ activeTripId, onAddEntry, setActiveTab }: { activeTripId: string; onAddEntry: (entry: any) => void; setActiveTab: (tab: string) => void }) {
   const [type, setType] = useState("photo");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -564,7 +564,7 @@ function AddEntryView({ activeTripId, onAddEntry, setActiveTab }) {
   );
 }
 
-function CreateTripModal({ onClose, onCreate }) {
+function CreateTripModal({ onClose, onCreate }: { onClose: () => void; onCreate: (trip: any) => void }) {
   const [title, setTitle] = useState("");
   const [subtitle, setSubtitle] = useState("");
   const [cover, setCover] = useState("");
@@ -634,7 +634,7 @@ function CreateTripModal({ onClose, onCreate }) {
   );
 }
 
-function EmptyState({ title, body }) {
+function EmptyState({ title, body }: { title: string; body: string }) {
   return (
     <div className="rounded-[2rem] border border-dashed border-slate-300 bg-white p-8 text-center">
       <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-3xl bg-slate-100 text-slate-500">
@@ -646,7 +646,7 @@ function EmptyState({ title, body }) {
   );
 }
 
-function BottomNav({ activeTab, setActiveTab }) {
+function BottomNav({ activeTab, setActiveTab }: { activeTab: string; setActiveTab: (tab: string) => void }) {
   return (
     <div className="fixed bottom-0 left-0 right-0 z-40 border-t border-slate-200 bg-white/95 px-3 pb-3 pt-2 backdrop-blur-xl">
       <div className="mx-auto grid max-w-md grid-cols-4 gap-1 rounded-[1.5rem] bg-slate-100 p-1">
@@ -758,11 +758,11 @@ export default function TravelScrapbookMVP() {
       );
   }, [entries, activeTrip]);
 
-  function addEntry(entry) {
+  function addEntry(entry: any): void {
     setEntries((current) => [entry, ...current]);
   }
 
-  function addReaction(entryId, emoji) {
+  function addReaction(entryId: string, emoji: string): void {
     setEntries((current) =>
       current.map((entry) =>
         entry.id === entryId ? { ...entry, reactions: [...entry.reactions, emoji] } : entry
@@ -770,7 +770,7 @@ export default function TravelScrapbookMVP() {
     );
   }
 
-  function addComment(entryId, comment) {
+  function addComment(entryId: string, comment: string): void {
     setEntries((current) =>
       current.map((entry) =>
         entry.id === entryId ? { ...entry, comments: [...entry.comments, comment] } : entry

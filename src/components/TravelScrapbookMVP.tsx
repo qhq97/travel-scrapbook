@@ -353,7 +353,17 @@ function ScrapbookView({ trip, entries }: { trip: any; entries: any[] }) {
   );
 }
 
-function MembersView({ trip }: { trip: any }) {
+function MembersView({
+  trip,
+  joinCode,
+  setJoinCode,
+  onJoinTrip,
+}: {
+  trip: any;
+  joinCode: string;
+  setJoinCode: (value: string) => void;
+  onJoinTrip: () => void;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function copyInvite() {
@@ -407,6 +417,30 @@ function MembersView({ trip }: { trip: any }) {
         <div className="mt-2 text-sm text-white/70">
           {copied ? "Copied" : "Share this code with friends."}
         </div>
+      </div>
+
+      <div className="mt-4 rounded-[1.75rem] bg-white p-4 shadow-sm ring-1 ring-slate-200">
+        <h2 className="text-lg font-black text-slate-950">
+          Join another scrapbook
+        </h2>
+
+        <p className="mt-1 text-sm leading-6 text-slate-500">
+          If someone shared an invite code with you, enter it here.
+        </p>
+
+        <input
+          value={joinCode}
+          onChange={(event) => setJoinCode(event.target.value)}
+          placeholder="Example: BALI-9012"
+          className="mt-4 w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono uppercase outline-none focus:border-slate-400"
+        />
+
+        <button
+          onClick={onJoinTrip}
+          className="mt-3 w-full rounded-2xl bg-slate-950 px-4 py-4 font-black text-white"
+        >
+          Join scrapbook
+        </button>
       </div>
     </div>
   );
@@ -694,6 +728,7 @@ export default function TravelScrapbookMVP() {
   const [activeTab, setActiveTab] = useState("feed");
   const [showCreateTrip, setShowCreateTrip] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [joinCode, setJoinCode] = useState("");
 
   const activeTrip = useMemo(() => {
     return trips.find((trip) => trip.id === activeTripId) || trips[0] || null;
@@ -912,6 +947,74 @@ export default function TravelScrapbookMVP() {
     setActiveTab("feed");
     setShowCreateTrip(false);
   }
+
+  async function loadTrips() {
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("trips")
+      .select("*")
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Load trips error:", error);
+      alert(error.message);
+      return;
+    }
+
+    const mappedTrips = (data || []).map((trip) => ({
+      id: trip.id,
+      title: trip.title,
+      subtitle: trip.subtitle || "Small group trip",
+      cover:
+        trip.cover_url ||
+        "https://images.unsplash.com/photo-1500530855697-b586d89ba3ee?q=80&w=1200&auto=format&fit=crop",
+      inviteCode: trip.invite_code,
+      createdAt: trip.created_at,
+    }));
+
+    setTrips(mappedTrips);
+
+    if (mappedTrips.length > 0 && !activeTripId) {
+      setActiveTripId(mappedTrips[0].id);
+    }
+  }
+
+  async function joinTripByInviteCode() {
+    if (!user) {
+      alert("Please sign in first.");
+      return;
+    }
+
+    const cleanedCode = joinCode.trim().toUpperCase();
+
+    if (!cleanedCode) {
+      alert("Please enter an invite code.");
+      return;
+    }
+
+    const { data: tripId, error } = await supabase.rpc(
+      "join_trip_by_invite_code",
+      {
+        p_invite_code: cleanedCode,
+      }
+    );
+
+    if (error) {
+      console.error("Join trip error:", error);
+      alert(error.message);
+      return;
+    }
+
+    await loadTrips();
+
+    if (tripId) {
+      setActiveTripId(tripId);
+    }
+
+    setJoinCode("");
+    setActiveTab("feed");
+  }
   
   async function loadEntries(tripId: string) {
     const { data, error } = await supabase
@@ -954,21 +1057,47 @@ export default function TravelScrapbookMVP() {
   if (!activeTrip) {
     return (
       <div className="min-h-screen bg-slate-50 px-4 py-10">
-        <div className="mx-auto max-w-md rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
-          <h1 className="text-2xl font-black text-slate-950">
-            Create your first trip scrapbook
-          </h1>
+        <div className="mx-auto max-w-md space-y-4">
+          <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <h1 className="text-2xl font-black text-slate-950">
+              Create your first trip scrapbook
+            </h1>
 
-          <p className="mt-2 text-sm leading-6 text-slate-500">
-            You are signed in, but you do not have any trip books yet.
-          </p>
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              You are signed in, but you do not have any trip books yet.
+            </p>
 
-          <button
-            onClick={() => setShowCreateTrip(true)}
-            className="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-4 font-black text-white"
-          >
-            Create trip book
-          </button>
+            <button
+              onClick={() => setShowCreateTrip(true)}
+              className="mt-5 w-full rounded-2xl bg-slate-950 px-4 py-4 font-black text-white"
+            >
+              Create trip book
+            </button>
+          </div>
+
+          <div className="rounded-[2rem] bg-white p-6 shadow-sm ring-1 ring-slate-200">
+            <h2 className="text-xl font-black text-slate-950">
+              Join a friend’s scrapbook
+            </h2>
+
+            <p className="mt-2 text-sm leading-6 text-slate-500">
+              Enter the invite code your friend shared with you.
+            </p>
+
+            <input
+              value={joinCode}
+              onChange={(event) => setJoinCode(event.target.value)}
+              placeholder="Example: TOKY-5821"
+              className="mt-5 w-full rounded-2xl border border-slate-200 px-4 py-3 font-mono uppercase outline-none focus:border-slate-400"
+            />
+
+            <button
+              onClick={joinTripByInviteCode}
+              className="mt-3 w-full rounded-2xl bg-slate-950 px-4 py-4 font-black text-white"
+            >
+              Join scrapbook
+            </button>
+          </div>
         </div>
 
         {showCreateTrip ? (
@@ -1006,7 +1135,14 @@ export default function TravelScrapbookMVP() {
             {activeTab === "add" ? (
               <AddEntryView activeTripId={activeTrip.id} onAddEntry={addEntry} setActiveTab={setActiveTab} />
             ) : null}
-            {activeTab === "members" ? <MembersView trip={activeTrip} /> : null}
+            {activeTab === "members" ? (
+              <MembersView
+                trip={activeTrip}
+                joinCode={joinCode}
+                setJoinCode={setJoinCode}
+                onJoinTrip={joinTripByInviteCode}
+              />
+            ) : null}
           </motion.div>
         </AnimatePresence>
       </main>

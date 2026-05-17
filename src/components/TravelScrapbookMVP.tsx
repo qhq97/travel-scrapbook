@@ -836,6 +836,29 @@ export default function TravelScrapbookMVP() {
     };
   }, [activeTripId]);
 
+  useEffect(() => {
+    if (!activeTripId) return;
+
+    const channel = supabase
+      .channel(`comments-${activeTripId}`)
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "comments",
+        },
+        () => {
+          loadEntries(activeTripId);
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [activeTripId]);
+
   const activeEntries = useMemo(() => {
     if (!activeTrip) return [];
 
@@ -888,12 +911,30 @@ export default function TravelScrapbookMVP() {
     );
   }
 
-  function addComment(entryId: string, comment: string): void {
-    setEntries((current) =>
-      current.map((entry) =>
-        entry.id === entryId ? { ...entry, comments: [...entry.comments, comment] } : entry
-      )
-    );
+  async function addComment(entryId: string, comment: string) {
+    if (!user) {
+      alert("Please sign in first.");
+      return;
+    }
+
+    const { data, error } = await supabase
+      .from("comments")
+      .insert({
+        entry_id: entryId,
+        author_id: user.id,
+        body: comment,
+      })
+      .select();
+
+    console.log("Inserted comment:", data);
+    console.log("Comment insert error:", error);
+
+    if (error) {
+      alert(error.message);
+      return;
+    }
+
+    await loadEntries(activeTripId);
   }
 
   async function createTrip(trip: any) {
@@ -1019,7 +1060,15 @@ export default function TravelScrapbookMVP() {
   async function loadEntries(tripId: string) {
     const { data, error } = await supabase
       .from("entries")
-      .select("*")
+      .select(`
+        *,
+        comments (
+          id,
+          body,
+          author_id,
+          created_at
+        )
+      `)
       .eq("trip_id", tripId)
       .order("created_at", { ascending: false });
 
@@ -1039,7 +1088,12 @@ export default function TravelScrapbookMVP() {
       image: entry.image_url || "",
       mood: entry.mood || "",
       reactions: [],
-      comments: [],
+      comments: (entry.comments || [])
+        .sort(
+          (a: any, b: any) =>
+            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+        )
+        .map((comment: any) => comment.body),
       createdAt: entry.created_at,
     }));
 

@@ -1,10 +1,10 @@
-import AuthGate from "@/components/AuthGate";
-import TravelScrapbookMVP from "@/components/TravelScrapbookMVP";
+import AuthGate from "@/components/auth/AuthGate";
+import TravelScrapbookApp from "@/features/scrapbook/TravelScrapbookApp";
 
 export default function Home() {
   return (
     <AuthGate>
-      <TravelScrapbookMVP />
+      <TravelScrapbookApp />
     </AuthGate>
   );
 }

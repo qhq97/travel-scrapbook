@@ -1,36 +1,69 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Travel Scrapbook
 
-## Getting Started
+A shared travel memory app for small groups. Create a trip, invite your crew with a code, and collect photos, notes, quotes, and places in one mobile-friendly scrapbook.
 
-First, run the development server:
+## Features
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+- **Trips** — Create trips with a title, subtitle, and cover image; switch between trips from the header.
+- **Invite codes** — Share an invite code so others can join the same trip.
+- **Feed** — Chronological view of entries with comments.
+- **Scrapbook** — Grid layout of memories for a trip-at-a-glance feel.
+- **Entries** — Add photos, notes, quotes, or places (with optional location and mood).
+- **Auth** — Email/password sign-in and sign-up via Supabase.
+
+## Tech stack
+
+- [Next.js](https://nextjs.org) 16 (App Router)
+- [React](https://react.dev) 19
+- [Tailwind CSS](https://tailwindcss.com) 4
+- [Supabase](https://supabase.com) (auth, database, storage)
+- [Framer Motion](https://www.framer.com/motion/) for UI transitions
+- [Vercel Analytics](https://vercel.com/analytics)
+
+## Getting started
+
+### Prerequisites
+
+- Node.js 20+
+- A [Supabase](https://supabase.com) project with the app's tables, RLS policies, storage bucket (`scrapbook-images`), and RPCs configured
+
+### Environment variables
+
+Create `.env.local` in the project root:
+
+```env
+NEXT_PUBLIC_SUPABASE_URL=your-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Install and run
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+```bash
+npm install
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Open [http://localhost:3000](http://localhost:3000). Sign up or sign in, then create a trip or join one with an invite code.
 
-## Learn More
+### Other scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Command        | Description              |
+| -------------- | ------------------------ |
+| `npm run build` | Production build        |
+| `npm run start` | Run production server   |
+| `npm run lint`  | Run ESLint              |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Project structure
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```
+src/
+├── app/              # Next.js app shell (layout, page, styles)
+├── components/       # UI (auth, entries, layout, trips)
+├── features/scrapbook/  # Main app + data hook
+├── lib/              # Supabase client, types, constants
+└── services/         # Supabase queries (trips, entries, comments)
+```
 
-## Deploy on Vercel
+## Deploy
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+The app is a standard Next.js deployment. Set the same Supabase environment variables on your host (e.g. [Vercel](https://vercel.com)).

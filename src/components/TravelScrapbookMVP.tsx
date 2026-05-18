@@ -45,6 +45,12 @@ function classNames(
   return values.filter(Boolean).join(" ");
 }
 
+function getUsernameFromEmail(email?: string | null): string {
+  if (!email) return "Member";
+
+  return email.split("@")[0] || "Member";
+}
+
 function formatDay(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString(undefined, {
@@ -235,9 +241,15 @@ function EntryCard({ entry, onReact, onAddComment }: { entry: any; onReact: (id:
 
         {entry.comments.length ? (
           <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">
-            {entry.comments.map((comment: string, index: number) => (
-              <div key={`${comment}-${index}`} className="rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-700">
-                {comment}
+            {entry.comments.map((comment: any, index: number) => (
+              <div
+                key={`${comment.body}-${index}`}
+                className="rounded-2xl bg-slate-50 px-3 py-2 text-sm text-slate-700"
+              >
+                <div className="mb-1 text-xs font-bold text-slate-500">
+                  {comment.author}
+                </div>
+                <div>{comment.body}</div>
               </div>
             ))}
           </div>
@@ -876,29 +888,25 @@ export default function TravelScrapbookMVP() {
       return;
     }
 
-    console.log("Adding entry to Supabase:", entry);
+    const authorName = getUsernameFromEmail(user.email);
 
-    const { data, error } = await supabase
-      .from("entries")
-      .insert({
-        trip_id: entry.tripId,
-        author_id: user.id,
-        type: entry.type,
-        title: entry.title,
-        body: entry.body,
-        location: entry.location,
-        mood: entry.mood,
-        image_url: entry.image,
-      })
-      .select();
+    const { error } = await supabase.from("entries").insert({
+      trip_id: entry.tripId,
+      author_id: user.id,
+      author_name: authorName,
+      type: entry.type,
+      title: entry.title,
+      body: entry.body,
+      location: entry.location,
+      mood: entry.mood,
+      image_url: entry.image,
+    });
 
     if (error) {
       console.error("Supabase insert error:", error);
       alert(error.message);
       return;
     }
-
-    console.log("Inserted entry:", data);
 
     await loadEntries(entry.tripId);
   }
@@ -917,19 +925,17 @@ export default function TravelScrapbookMVP() {
       return;
     }
 
-    const { data, error } = await supabase
-      .from("comments")
-      .insert({
-        entry_id: entryId,
-        author_id: user.id,
-        body: comment,
-      })
-      .select();
+    const authorName = getUsernameFromEmail(user.email);
 
-    console.log("Inserted comment:", data);
-    console.log("Comment insert error:", error);
+    const { error } = await supabase.from("comments").insert({
+      entry_id: entryId,
+      author_id: user.id,
+      author_name: authorName,
+      body: comment,
+    });
 
     if (error) {
+      console.error("Comment insert error:", error);
       alert(error.message);
       return;
     }
@@ -1066,6 +1072,7 @@ export default function TravelScrapbookMVP() {
           id,
           body,
           author_id,
+          author_name,
           created_at
         )
       `)
@@ -1081,7 +1088,9 @@ export default function TravelScrapbookMVP() {
       id: entry.id,
       tripId: entry.trip_id,
       type: entry.type,
-      author: entry.author_id === user?.id ? "You" : "Member",
+      author:
+        entry.author_name ||
+        (entry.author_id === user?.id ? getUsernameFromEmail(user?.email) : "Member"),
       title: entry.title,
       body: entry.body || "",
       location: entry.location || "",
@@ -1093,7 +1102,10 @@ export default function TravelScrapbookMVP() {
           (a: any, b: any) =>
             new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
         )
-        .map((comment: any) => comment.body),
+        .map((comment: any) => ({
+          author: comment.author_name || "Member",
+          body: comment.body,
+        })),
       createdAt: entry.created_at,
     }));
 

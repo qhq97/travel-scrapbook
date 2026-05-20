@@ -9,12 +9,10 @@ import { EmptyState } from "@/components/shared/EmptyState";
 export function FeedView({
   trip,
   entries,
-  onReact,
   onAddComment,
 }: {
   trip: Trip;
   entries: Entry[];
-  onReact: (entryId: string, emoji: string) => void;
   onAddComment: (entryId: string, comment: string) => Promise<void>;
 }) {
   const grouped = groupByDay(entries);
@@ -43,7 +41,6 @@ export function FeedView({
                   <EntryCard
                     key={entry.id}
                     entry={entry}
-                    onReact={onReact}
                     onAddComment={onAddComment}
                   />
                 ))}

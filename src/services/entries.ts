@@ -59,7 +59,6 @@ export async function fetchEntries(
     location: entry.location || "",
     image: entry.image_url || "",
     mood: entry.mood || "",
-    reactions: [],
     comments: (entry.comments || [])
       .sort(
         (a: any, b: any) =>

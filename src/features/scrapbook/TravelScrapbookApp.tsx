@@ -128,7 +128,6 @@ export default function TravelScrapbookApp() {
               <FeedView
                 trip={activeTrip}
                 entries={activeEntries}
-                onReact={() => {}}
                 onAddComment={addComment}
               />
             ) : null}

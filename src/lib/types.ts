@@ -22,7 +22,6 @@ export type Entry = {
   location: string;
   image: string;
   mood: string;
-  reactions: string[];
   comments: EntryComment[];
   createdAt: string;
 };

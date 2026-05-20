@@ -9,11 +9,9 @@ import type { Entry } from "@/lib/types";
 
 export function EntryCard({
   entry,
-  onReact,
   onAddComment,
 }: {
   entry: Entry;
-  onReact: (entryId: string, emoji: string) => void;
   onAddComment: (entryId: string, comment: string) => Promise<void>;
 }) {
   const meta = entryTypeMeta[entry.type as keyof typeof entryTypeMeta] || entryTypeMeta.note;
@@ -61,33 +59,14 @@ export function EntryCard({
           {entry.mood ? <span className="rounded-full bg-slate-100 px-2.5 py-1">{entry.mood}</span> : null}
         </div>
 
-        <div className="mt-4 flex items-center gap-2">
-          {["❤️", "😂", "✨", "🌍"].map((emoji) => (
-            <button
-              key={emoji}
-              onClick={() => onReact(entry.id, emoji)}
-              className="flex h-10 min-w-10 items-center justify-center rounded-2xl bg-slate-100 px-3 text-lg active:scale-95"
-            >
-              {emoji}
-            </button>
-          ))}
+        <div className="mt-4">
           <button
             onClick={() => setShowCommentBox((value) => !value)}
-            className="ml-auto flex h-10 items-center gap-1 rounded-2xl bg-slate-950 px-3 text-sm font-semibold text-white"
+            className="flex h-10 items-center gap-1 rounded-2xl bg-slate-950 px-3 text-sm font-semibold text-white"
           >
             <MessageCircle size={16} /> Comment
           </button>
         </div>
-
-        {entry.reactions.length ? (
-          <div className="mt-3 flex flex-wrap gap-1 text-sm text-slate-600">
-            {entry.reactions.map((reaction: string, index: number) => (
-              <span key={`${reaction}-${index}`} className="rounded-full bg-slate-100 px-2 py-1">
-                {reaction}
-              </span>
-            ))}
-          </div>
-        ) : null}
 
         {entry.comments.length ? (
           <div className="mt-3 space-y-2 border-t border-slate-100 pt-3">

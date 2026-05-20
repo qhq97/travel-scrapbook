@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Camera, Plus } from "lucide-react";
+import { PostSuccessModal } from "@/components/entries/PostSuccessModal";
 import { entryTypeMeta } from "@/lib/constants";
 import { classNames } from "@/lib/utils";
 import type { EntryType, NewEntryInput } from "@/lib/types";
@@ -12,7 +13,10 @@ export function AddEntryView({
   setActiveTab,
 }: {
   activeTripId: string;
-  onAddEntry: (entry: NewEntryInput, imageFile?: File | null) => Promise<void>;
+  onAddEntry: (
+    entry: NewEntryInput,
+    imageFile?: File | null
+  ) => Promise<boolean>;
   setActiveTab: (tab: "feed") => void;
 }) {
   const [type, setType] = useState<EntryType>("photo");
@@ -22,6 +26,8 @@ export function AddEntryView({
   const [mood, setMood] = useState("");
   const [image, setImage] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
 
   function resetForm() {
     setType("photo");
@@ -33,29 +39,44 @@ export function AddEntryView({
     setImageFile(null);
   }
 
-    async function submit() {
+  async function submit() {
+    if (submitting) return;
+
     const fallbackTitle =
-        type === "photo"
+      type === "photo"
         ? "New photo memory"
         : type === "quote"
-        ? "New quote"
-        : "New memory";
+          ? "New quote"
+          : "New memory";
 
-    await onAddEntry(
+    setSubmitting(true);
+
+    try {
+      const posted = await onAddEntry(
         {
-        tripId: activeTripId,
-        type,
-        title: title.trim() || fallbackTitle,
-        body: body.trim(),
-        location: location.trim(),
-        mood: mood.trim(),
+          tripId: activeTripId,
+          type,
+          title: title.trim() || fallbackTitle,
+          body: body.trim(),
+          location: location.trim(),
+          mood: mood.trim(),
         },
         imageFile
-    );
+      );
 
-    resetForm();
-    setActiveTab("feed");
+      if (posted) {
+        resetForm();
+        setShowSuccessModal(true);
+      }
+    } finally {
+      setSubmitting(false);
     }
+  }
+
+  function dismissSuccessModal() {
+    setShowSuccessModal(false);
+    setActiveTab("feed");
+  }
 
   function handleImageUpload(event: React.ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -140,11 +161,16 @@ export function AddEntryView({
         </div>
         <button
           onClick={submit}
-          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-4 text-base font-black text-white active:scale-[0.99]"
+          disabled={submitting}
+          className="flex w-full items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-4 text-base font-black text-white active:scale-[0.99] disabled:opacity-60"
         >
-          <Plus size={19} /> Add to scrapbook
+          <Plus size={19} /> {submitting ? "Posting..." : "Add to scrapbook"}
         </button>
       </div>
+
+      {showSuccessModal ? (
+        <PostSuccessModal onClose={dismissSuccessModal} />
+      ) : null}
     </div>
   );
 }

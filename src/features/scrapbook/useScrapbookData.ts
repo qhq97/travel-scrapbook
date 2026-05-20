@@ -194,10 +194,13 @@ export function useScrapbookData() {
     }
   }
 
-  async function addEntry(input: NewEntryInput, imageFile?: File | null) {
+  async function addEntry(
+    input: NewEntryInput,
+    imageFile?: File | null
+  ): Promise<boolean> {
     if (!user) {
       alert("Please sign in first.");
-      return;
+      return false;
     }
 
     try {
@@ -213,9 +216,11 @@ export function useScrapbookData() {
 
       await createEntryForTrip(input, user, imageUrl);
       await loadEntries(input.tripId);
+      return true;
     } catch (error: any) {
       console.error("Add entry error:", error);
       alert(error.message);
+      return false;
     }
   }
 

@@ -18,15 +18,7 @@ export function ScrapbookView({
 }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const collagePageRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const photoEntries = useMemo(
-    () => entries.filter((entry) => Boolean(entry.image)),
-    [entries]
-  );
-  const collageEntries = photoEntries.length > 0 ? photoEntries : entries;
-  const collagePages = useMemo(
-    () => groupEntriesByPostingDate(collageEntries),
-    [collageEntries]
-  );
+  const collagePages = useMemo(() => groupEntriesByPostingDate(entries), [entries]);
 
   async function downloadCollages() {
     if (collagePages.length === 0 || isDownloading) return;
@@ -121,12 +113,15 @@ export function ScrapbookView({
                       pageIndex,
                       cardIndex
                     );
+                    const isSpeechBubble = !entry.image;
                     return (
                       <div
                         key={entry.id}
                         className={classNames(
-                          "relative overflow-hidden rounded-[1.2rem] bg-white p-1 shadow-sm ring-1 ring-rose-100",
-                          templateClass
+                          isSpeechBubble
+                            ? "relative col-span-2"
+                            : "relative overflow-hidden rounded-[1.2rem] bg-white p-1 shadow-sm ring-1 ring-rose-100",
+                          isSpeechBubble ? "" : templateClass
                         )}
                       >
                         {entry.image ? (
@@ -141,22 +136,60 @@ export function ScrapbookView({
                             )}
                           />
                         ) : (
-                          <div className="flex h-40 items-center justify-center rounded-2xl bg-slate-100 px-4 text-center text-3xl">
-                            {entry.type === "quote" ? "“”" : "✍️"}
+                          <div className="rounded-2xl bg-gradient-to-br from-white to-rose-50 p-2">
+                            <div className="mb-1 px-1 text-sm font-black text-slate-800">
+                              {entry.title || "Memory note"}
+                            </div>
+                            <div
+                              className={classNames(
+                                "relative w-full rounded-2xl px-3 py-2 text-sm leading-5 text-slate-700 shadow-sm",
+                                (pageIndex + cardIndex) % 3 === 0
+                                  ? "bg-pink-100"
+                                  : "",
+                                (pageIndex + cardIndex) % 3 === 1
+                                  ? "bg-violet-100"
+                                  : "",
+                                (pageIndex + cardIndex) % 3 === 2
+                                  ? "bg-cyan-100"
+                                  : ""
+                              )}
+                            >
+                              <span className="absolute -bottom-2 left-8 h-4 w-4 rotate-45 rounded-[3px] bg-inherit" />
+                              <div className="relative z-10 line-clamp-5">
+                                {entry.body || entry.title || "New memory"}
+                              </div>
+                            </div>
                           </div>
                         )}
 
-                        <div className="px-2 pb-2 pt-2">
-                          <div className="line-clamp-1 text-xs font-black text-slate-800">
-                            {entry.title || entry.location || "Untitled memory"}
-                          </div>
-                          <div className="line-clamp-1 text-[11px] text-slate-500">
-                            {entry.author}
-                          </div>
+                        <div className={classNames("px-2 pb-2 pt-2", isSpeechBubble ? "pt-1" : "")}>
+                          {!isSpeechBubble && (
+                            <>
+                              <div className="line-clamp-1 text-xs font-black text-slate-800">
+                                {entry.title || entry.location || "Untitled memory"}
+                              </div>
+                              <div className="line-clamp-1 text-[11px] text-slate-500">
+                                {entry.author}
+                              </div>
+                            </>
+                          )}
+                          {isSpeechBubble && (
+                            <div className="mt-1 text-[11px] font-semibold text-slate-500">
+                              {entry.author}
+                            </div>
+                          )}
                           {(entry.location || entry.mood) && (
-                            <div className="mt-1 flex flex-wrap gap-x-2 gap-y-1 text-[11px] text-slate-500">
-                              {entry.location && <span>{entry.location}</span>}
-                              {entry.mood && <span>{entry.mood}</span>}
+                            <div className="mt-1 flex flex-wrap gap-1.5">
+                              {entry.location && (
+                                <span className="rounded-full bg-cyan-100 px-2 py-0.5 text-[11px] font-semibold text-cyan-700">
+                                  {entry.location}
+                                </span>
+                              )}
+                              {entry.mood && (
+                                <span className="rounded-full bg-violet-100 px-2 py-0.5 text-[11px] font-semibold text-violet-700">
+                                  {entry.mood}
+                                </span>
+                              )}
                             </div>
                           )}
                         </div>
